@@ -1,8 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:flutter/material.dart'
-    hide ImplicitlyAnimatedWidget, ImplicitlyAnimatedWidgetState;
+import 'package:flutter/material.dart' hide ImplicitlyAnimatedWidget, ImplicitlyAnimatedWidgetState;
 import 'package:flutter/services.dart';
 
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
@@ -19,8 +18,7 @@ part 'floating_search_app_bar.dart';
 
 // ignore_for_file: public_member_api_docs
 
-typedef FloatingSearchBarBuilder = Widget Function(
-    BuildContext context, Animation<double> transition);
+typedef FloatingSearchBarBuilder = Widget Function(BuildContext context, Animation<double> transition);
 
 /// An expandable material floating search bar with customizable
 /// transitions similar to the ones used extensively
@@ -62,6 +60,14 @@ class FloatingSearchBar extends ImplicitlyAnimatedWidget {
   ///
   /// If not specified, defaults to `Colors.black26`.
   final Color? backdropColor;
+
+  /// A BoxDecoration object for the backdrop container -
+  /// when the `FloatingSearchBar` is opened.
+  ///
+  /// Useful in specific cases where the backdrop does not cover
+  /// the entire screen. For example when the search bar is located inside a widget
+  /// which takes only part of the screen.
+  final BoxDecoration? backdropDecoration;
 
   /// The insets from the edges of its parent.
   ///
@@ -350,6 +356,7 @@ class FloatingSearchBar extends ImplicitlyAnimatedWidget {
     this.shadowColor = Colors.black87,
     this.iconColor,
     this.backdropColor,
+    this.backdropDecoration,
     this.margins,
     this.padding,
     this.insets,
@@ -390,7 +397,9 @@ class FloatingSearchBar extends ImplicitlyAnimatedWidget {
     this.physics,
     this.scrollController,
     this.scrollPadding = const EdgeInsets.symmetric(vertical: 16),
-  }) : super(key, implicitDuration, implicitCurve);
+  })  : assert(backdropColor == null || backdropDecoration == null,
+            'backdropColor and backdropDecoration must not be used simultaniously. Instead, backdropColor should be passed as color parameter inside backdropDecoration.'),
+        super(key, implicitDuration, implicitCurve);
 
   @override
   FloatingSearchBarState createState() => FloatingSearchBarState();
@@ -400,8 +409,7 @@ class FloatingSearchBar extends ImplicitlyAnimatedWidget {
   }
 }
 
-class FloatingSearchBarState extends ImplicitlyAnimatedWidgetState<
-    FloatingSearchBarStyle, FloatingSearchBar> {
+class FloatingSearchBarState extends ImplicitlyAnimatedWidgetState<FloatingSearchBarStyle, FloatingSearchBar> {
   final GlobalKey<FloatingSearchAppBarState> barKey = GlobalKey();
   FloatingSearchAppBarState? get barState => barKey.currentState;
 
@@ -414,8 +422,7 @@ class FloatingSearchBarState extends ImplicitlyAnimatedWidgetState<
       }
     });
 
-  late CurvedAnimation animation =
-      CurvedAnimation(parent: _controller, curve: curve);
+  late CurvedAnimation animation = CurvedAnimation(parent: _controller, curve: curve);
 
   late final _translateController = AnimationController(
     vsync: this,
@@ -430,8 +437,7 @@ class FloatingSearchBarState extends ImplicitlyAnimatedWidgetState<
   late Widget body;
   final ValueNotifier<int> rebuilder = ValueNotifier(0);
 
-  late FloatingSearchBarTransition transition =
-      widget.transition ?? SlideFadeFloatingSearchBarTransition();
+  late FloatingSearchBarTransition transition = widget.transition ?? SlideFadeFloatingSearchBarTransition();
   late var _scrollController = widget.scrollController ?? ScrollController();
 
   dynamic get progress => widget.progress;
@@ -505,8 +511,7 @@ class FloatingSearchBarState extends ImplicitlyAnimatedWidgetState<
       transition.searchBar = this;
     }
 
-    if (widget.scrollController != null &&
-        widget.scrollController != _scrollController) {
+    if (widget.scrollController != null && widget.scrollController != _scrollController) {
       _scrollController = widget.scrollController!;
     }
 
@@ -535,8 +540,7 @@ class FloatingSearchBarState extends ImplicitlyAnimatedWidgetState<
     _scrollController.jumpTo(0.0);
   }
 
-  EdgeInsets _resolve(EdgeInsetsGeometry insets) =>
-      insets.resolve(Directionality.of(context));
+  EdgeInsets _resolve(EdgeInsetsGeometry insets) => insets.resolve(Directionality.of(context));
 
   bool _onBuilderScroll(ScrollNotification notification) {
     _offset = notification.metrics.pixels;
@@ -567,8 +571,7 @@ class FloatingSearchBarState extends ImplicitlyAnimatedWidgetState<
 
         final delta = pixel - _lastPixel;
 
-        _translateController.value +=
-            delta / (style.height + style.margins.top);
+        _translateController.value += delta / (style.height + style.margins.top);
         _lastPixel = pixel;
       }
     }
@@ -664,8 +667,7 @@ class FloatingSearchBarState extends ImplicitlyAnimatedWidgetState<
     return AnimatedAlign(
       duration: isAnimating ? duration : Duration.zero,
       curve: widget.transitionCurve,
-      alignment: Alignment(
-          isOpen ? style.openAxisAlignment : style.axisAlignment, -1.0),
+      alignment: Alignment(isOpen ? style.openAxisAlignment : style.axisAlignment, -1.0),
       child: transition.isBodyInsideSearchBar
           ? bar
           : Column(
@@ -701,8 +703,7 @@ class FloatingSearchBarState extends ImplicitlyAnimatedWidgetState<
       onQueryChanged: widget.onQueryChanged,
       onSubmitted: widget.onSubmitted,
       progress: widget.progress,
-      automaticallyImplyDrawerHamburger:
-          widget.automaticallyImplyDrawerHamburger,
+      automaticallyImplyDrawerHamburger: widget.automaticallyImplyDrawerHamburger,
       automaticallyImplyBackButton: widget.automaticallyImplyBackButton,
       toolbarOptions: widget.toolbarOptions,
       transitionDuration: widget.transitionDuration,
@@ -772,10 +773,8 @@ class FloatingSearchBarState extends ImplicitlyAnimatedWidgetState<
     return IgnorePointer(
       ignoring: widget.isScrollControlled && v < 1.0,
       child: SizedBox(
-        width: (transition.isBodyInsideSearchBar
-                ? transition.lerpInnerWidth()
-                : transition.lerpWidth()) +
-            transition.lerpMargin().horizontal,
+        width:
+            (transition.isBodyInsideSearchBar ? transition.lerpInnerWidth() : transition.lerpWidth()) + transition.lerpMargin().horizontal,
         child: body,
       ),
     );
@@ -795,7 +794,8 @@ class FloatingSearchBarState extends ImplicitlyAnimatedWidgetState<
         child: Container(
           width: double.infinity,
           height: double.infinity,
-          color: style.backdropColor,
+          decoration: widget.backdropDecoration,
+          color: widget.backdropDecoration != null ? null : style.backdropColor,
         ),
       ),
     );
@@ -823,30 +823,20 @@ class FloatingSearchBarState extends ImplicitlyAnimatedWidgetState<
       maxWidth: widget.width,
       openMaxWidth: widget.openWidth,
       axisAlignment: widget.axisAlignment ?? 0.0,
-      openAxisAlignment:
-          widget.openAxisAlignment ?? widget.axisAlignment ?? 0.0,
+      openAxisAlignment: widget.openAxisAlignment ?? widget.axisAlignment ?? 0.0,
       backgroundColor: widget.backgroundColor ?? theme.cardColor,
       shadowColor: widget.shadowColor ?? Colors.black45,
-      backdropColor: widget.backdropColor ??
-          widget.transition?.backdropColor ??
-          Colors.black26,
+      backdropColor: widget.backdropDecoration?.color ?? widget.backdropColor ?? widget.transition?.backdropColor ?? Colors.black26,
       border: widget.border ?? BorderSide.none,
       borderRadius: widget.borderRadius ?? BorderRadius.circular(4),
-      margins: (widget.margins ??
-              EdgeInsets.fromLTRB(
-                  8, MediaQuery.of(context).viewPadding.top + 6, 8, 0))
-          .resolve(direction),
-      padding: widget.padding?.resolve(direction) ??
-          const EdgeInsets.symmetric(horizontal: 12),
-      insets: widget.insets?.resolve(direction) ??
-          const EdgeInsets.symmetric(horizontal: 8),
+      margins: (widget.margins ?? EdgeInsets.fromLTRB(8, MediaQuery.of(context).viewPadding.top + 6, 8, 0)).resolve(direction),
+      padding: widget.padding?.resolve(direction) ?? const EdgeInsets.symmetric(horizontal: 12),
+      insets: widget.insets?.resolve(direction) ?? const EdgeInsets.symmetric(horizontal: 8),
     );
   }
 
   @override
-  FloatingSearchBarStyle lerp(
-          FloatingSearchBarStyle a, FloatingSearchBarStyle b, double t) =>
-      a.scaleTo(b, t);
+  FloatingSearchBarStyle lerp(FloatingSearchBarStyle a, FloatingSearchBarStyle b, double t) => a.scaleTo(b, t);
 }
 
 /// A controller for a [FloatingSearchBar].
